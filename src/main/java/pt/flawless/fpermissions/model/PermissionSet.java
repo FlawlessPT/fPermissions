@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import pt.flawless.fapi.permissions.PermissionCheck;
@@ -24,8 +25,12 @@ public final class PermissionSet {
         return new PermissionSet(copy);
     }
 
+    /** Consulta lenient (trim + minúsculas, sem validação, nunca lança; nulo dá negado); a negação ganha. */
     public PermissionCheck check(String permission) {
-        String query = PermissionNode.normalize(permission);
+        if (permission == null) {
+            return new PermissionCheck(false, null);
+        }
+        String query = permission.trim().toLowerCase(Locale.ROOT);
         String granter = null;
         for (Map.Entry<String, List<String>> e : nodesBySource.entrySet()) {
             for (String node : e.getValue()) {

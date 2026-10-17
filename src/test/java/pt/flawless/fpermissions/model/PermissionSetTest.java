@@ -60,6 +60,20 @@ class PermissionSetTest {
     }
 
     @Test
+    void consultaLenientNaoLanca() {
+        PermissionSet s = set(Map.of("g", List.of("a.b")));
+        for (String q : new String[] {null, "a b", "foo:bar"}) {
+            PermissionCheck c = s.check(q);
+            assertEquals(false, c.granted(), String.valueOf(q));
+            assertNull(c.source(), String.valueOf(q));
+        }
+        assertEquals(true, set(Map.of("g", List.of("*"))).check("foo:bar").granted());
+        PermissionSet shop = set(Map.of("g", List.of("fshop.admin")));
+        assertEquals(shop.check("fshop.admin"), shop.check(" FSHOP.Admin "));
+        assertEquals(true, shop.check(" FSHOP.Admin ").granted());
+    }
+
+    @Test
     void nadaCobre() {
         PermissionCheck c = set(Map.of("g", List.of("a.b"))).check("x");
         assertEquals(false, c.granted());
