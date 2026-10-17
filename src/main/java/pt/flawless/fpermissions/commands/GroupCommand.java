@@ -12,13 +12,11 @@ import pt.flawless.fapi.logs.FConsoleLogger;
 import pt.flawless.fpermissions.service.PermissionService;
 
 /**
- * /grupo: add, remove, list, info, groups, check, reload, help. Só {@code /grupo} sem argumentos (e {@code list} sem
- * nome) é livre; o resto exige
- * {@code fpermissions.admin} (verificado aqui, o comando não tem {@code permission:} no plugin.yml).
+ * /grupo: add, remove, list, info, groups, check, reload, help. Só para quem tem {@code fpermissions.admin} (declarado
+ * no plugin.yml e verificado aqui); a consola conta como admin.
  */
 public class GroupCommand implements CommandExecutor {
-    private static final String UNKNOWN = "§cSubcomando desconhecido.";
-    private static final String UNKNOWN_ADMIN = UNKNOWN + " Usa /grupo help para ver os comandos disponíveis.";
+    private static final String UNKNOWN = "§cSubcomando desconhecido. Usa /grupo help para ver os comandos disponíveis.";
 
     private final JavaPlugin plugin;
     private final PermissionService service;
@@ -32,7 +30,10 @@ public class GroupCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        boolean admin = Replies.isAdmin(sender);
+        if (!Replies.isAdmin(sender)) {
+            sender.sendMessage("§cNão tens permissão.");
+            return true;
+        }
         String sub = args.length > 0 ? args[0].toLowerCase(java.util.Locale.ROOT) : "";
         try {
             // sem argumentos mostra os grupos de quem escreve (a consola não tem grupos: remete para o help)
@@ -46,11 +47,6 @@ public class GroupCommand implements CommandExecutor {
             }
             if (sub.equals("help")) {
                 help(sender);
-                return true;
-            }
-            // quem não é admin só conhece "list" sem nome; o resto responde como um subcomando inexistente
-            if (!admin && !(sub.equals("list") && args.length == 1)) {
-                sender.sendMessage(UNKNOWN);
                 return true;
             }
             switch (sub) {
@@ -74,7 +70,7 @@ public class GroupCommand implements CommandExecutor {
                     String error = reloader.get();
                     sender.sendMessage(error == null ? "§aGrupos recarregados." : "§cNão foi possível recarregar: " + error);
                 }
-                default -> sender.sendMessage(UNKNOWN_ADMIN);
+                default -> sender.sendMessage(UNKNOWN);
             }
         } catch (RuntimeException e) {
             sender.sendMessage("§cNão foi possível concluir a operação.");
@@ -83,12 +79,8 @@ public class GroupCommand implements CommandExecutor {
         return true;
     }
 
-    /** /grupo help: só para admins (como o /money help). Pode ser a consola. */
+    /** /grupo help. Pode ser a consola. */
     private void help(CommandSender sender) {
-        if (!Replies.isAdmin(sender)) {
-            sender.sendMessage("§cNão tens permissão.");
-            return;
-        }
         sender.sendMessage("§e/grupo §7- Mostra os teus grupos");
         sender.sendMessage("§e/grupo list [jogador] §7- Mostra os grupos de um jogador (sem nome, os teus)");
         sender.sendMessage("§e/grupo add <jogador> <grupo> §7- Põe um jogador num grupo");
