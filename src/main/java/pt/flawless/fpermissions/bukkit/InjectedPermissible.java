@@ -9,7 +9,11 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.permissions.ServerOperator;
 import pt.flawless.fpermissions.service.PermissionService;
 
-/** Permissível que decide só pelo {@link PermissionService}: OP e {@code default:} do plugin.yml não concedem nada. */
+/**
+ * Permissível que decide só pelo {@link PermissionService}: OP e {@code default:} do plugin.yml não concedem nada.
+ * Limitações: permissões de outros plugins via {@code addAttachment} são ignoradas pelo {@code hasPermission},
+ * e {@code isOp()} continua a refletir o estado real de OP.
+ */
 public class InjectedPermissible extends PermissibleBase {
 
     private final UUID uuid;

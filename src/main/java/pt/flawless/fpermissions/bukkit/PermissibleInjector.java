@@ -6,9 +6,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissibleBase;
+import pt.flawless.fapi.enums.EMessageTypeEnum;
+import pt.flawless.fapi.logs.FConsoleLogger;
 import pt.flawless.fpermissions.service.PermissionService;
 
-/** Troca, por reflexão, o campo {@code perm} do jogador por um {@link InjectedPermissible} e repõe o original. */
+/**
+ * Troca, por reflexão, o campo {@code perm} do jogador por um {@link InjectedPermissible} e repõe o original.
+ * Usar só a partir da thread principal.
+ */
 public class PermissibleInjector {
 
     private record Held(Object target, Field field, PermissibleBase original) {
@@ -32,7 +37,15 @@ public class PermissibleInjector {
     /** Repõe o original de todos os jogadores injetados (desativação do plugin). */
     public void restoreAll() {
         for (UUID uuid : held.keySet()) {
-            restore(uuid);
+            try {
+                restore(uuid);
+            } catch (RuntimeException e) { // um jogador com problema não impede os restantes
+                try {
+                    new FConsoleLogger("fPermissions").sendMessage("falha ao repor permissões de " + uuid + ": " + e, EMessageTypeEnum.ERROR);
+                } catch (RuntimeException ignored) {
+                    // sem servidor (testes)
+                }
+            }
         }
     }
 

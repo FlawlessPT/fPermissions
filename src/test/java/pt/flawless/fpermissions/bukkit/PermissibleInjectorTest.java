@@ -110,6 +110,27 @@ class PermissibleInjectorTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void restoreAllContinuesAfterFailure() throws Exception {
+        FakePlayer good = new FakePlayer();
+        PermissibleBase original = good.perm;
+        injector.inject(good, UUID.randomUUID());
+        // entrada inválida (alvo de tipo errado): o set do campo lança IllegalArgumentException
+        java.lang.reflect.Field heldField = PermissibleInjector.class.getDeclaredField("held");
+        heldField.setAccessible(true);
+        java.util.Map<UUID, Object> held = (java.util.Map<UUID, Object>) heldField.get(injector);
+        var ctor = Class.forName(PermissibleInjector.class.getName() + "$Held").getDeclaredConstructors()[0];
+        ctor.setAccessible(true);
+        java.lang.reflect.Field perm = FakeHuman.class.getDeclaredField("perm");
+        perm.setAccessible(true);
+        for (int i = 0; i < 5; i++) { // vários maus, para a ordem de iteração não importar
+            held.put(UUID.randomUUID(), ctor.newInstance(new NoField(), perm, new Inert()));
+        }
+        injector.restoreAll();
+        assertSame(original, good.perm);
+    }
+
+    @Test
     void missingFieldThrows() {
         IllegalStateException e =
                 assertThrows(IllegalStateException.class, () -> injector.inject(new NoField(), UUID.randomUUID()));
