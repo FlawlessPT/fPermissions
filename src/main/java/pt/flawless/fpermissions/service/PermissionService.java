@@ -7,6 +7,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.function.Supplier;
 import pt.flawless.fapi.permissions.GroupInfo;
 import pt.flawless.fapi.permissions.PermissionCheck;
@@ -21,12 +24,15 @@ import pt.flawless.fpermissions.storage.PlayerData;
 public class PermissionService implements PermissionsApi {
 
     private static final int MAX_GROUP_LENGTH = 64;
+    private static final Logger LOG = Logger.getLogger("fPermissions");
 
     private record Entry(PlayerData data, PermissionSet set) {
     }
 
     private final PermissionRepository repository;
     private final Map<UUID, Entry> cache = new ConcurrentHashMap<>();
+    private final AtomicLong seq = new AtomicLong();
+    private final Map<UUID, Long> tickets = new ConcurrentHashMap<>();
     private volatile Groups groups;
 
     public PermissionService(PermissionRepository repository, Groups groups) {
@@ -46,10 +52,33 @@ public class PermissionService implements PermissionsApi {
 
     /** Carrega o jogador da BD para a cache; o futuro falha com a exceção do repositório. */
     public CompletableFuture<Void> loadPlayer(UUID uuid) {
-        return repository.load(uuid).thenAccept(data -> cache.put(uuid, new Entry(data, compute(groups, data))));
+        long ticket = seq.incrementAndGet();
+        tickets.put(uuid, ticket);
+        return read(uuid, ticket).whenComplete((v, ex) -> {
+            if (ex != null) {
+                tickets.remove(uuid, ticket);
+            }
+        });
+    }
+
+    /** Lê da BD e guarda só se o bilhete ainda for o último do jogador (o mais recente ganha; unload invalida). */
+    private CompletableFuture<Void> read(UUID uuid, long ticket) {
+        return repository.load(uuid).thenAccept(data -> {
+            Groups used = groups;
+            tickets.computeIfPresent(uuid, (k, current) -> {
+                if (current == ticket) {
+                    cache.put(uuid, new Entry(data, compute(used, data)));
+                }
+                return current;
+            });
+            if (used != groups) { // setGroups correu entretanto
+                cache.computeIfPresent(uuid, (k, e) -> new Entry(e.data(), compute(groups, e.data())));
+            }
+        });
     }
 
     public void unload(UUID uuid) {
+        tickets.remove(uuid);
         cache.remove(uuid);
     }
 
@@ -143,12 +172,25 @@ public class PermissionService implements PermissionsApi {
     public Optional<GroupInfo> getGroup(String name) {
         return groups.info(name);
     }
-
-    /** Depois de uma alteração, recarrega o jogador só se já estiver na cache. */
+    /**
+     * Depois de uma alteração, recarrega o jogador só se já estiver na cache. Se o recarregamento falhar, a entrada é
+     * retirada (falha fechada) e o futuro completa na mesma, porque a alteração na BD foi feita.
+     */
     private CompletableFuture<Boolean> refreshed(UUID uuid, CompletableFuture<Boolean> change) {
-        return change.thenCompose(changed -> cache.containsKey(uuid)
-                ? loadPlayer(uuid).thenApply(v -> changed)
-                : CompletableFuture.completedFuture(changed));
+        return change.thenCompose(changed -> {
+            long ticket = seq.incrementAndGet();
+            // computeIfPresent: nunca cria bilhete (nem entrada) para um jogador que já saiu
+            if (tickets.computeIfPresent(uuid, (k, v) -> ticket) == null) {
+                return CompletableFuture.completedFuture(changed);
+            }
+            return read(uuid, ticket).handle((v, ex) -> {
+                if (ex != null) {
+                    unload(uuid);
+                    LOG.log(Level.WARNING, "Falha a recarregar as permissões de " + uuid + "; entrada retirada", ex);
+                }
+                return changed;
+            });
+        });
     }
 
     private static void requireUuid(UUID uuid) {

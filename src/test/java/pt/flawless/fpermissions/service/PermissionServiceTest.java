@@ -30,6 +30,13 @@ class PermissionServiceTest {
         final Map<UUID, Set<String>> perms = new ConcurrentHashMap<>();
         final AtomicInteger calls = new AtomicInteger();
         volatile boolean failLoad;
+        volatile boolean manual;
+        final List<CompletableFuture<PlayerData>> pending = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        PlayerData snapshot(UUID uuid) {
+            return new PlayerData(
+                    new HashSet<>(groups.getOrDefault(uuid, Set.of())), new HashSet<>(perms.getOrDefault(uuid, Set.of())));
+        }
 
         FakeRepo() {
             super(null);
@@ -38,6 +45,11 @@ class PermissionServiceTest {
         @Override
         public CompletableFuture<PlayerData> load(UUID uuid) {
             calls.incrementAndGet();
+            if (manual) {
+                CompletableFuture<PlayerData> f = new CompletableFuture<>();
+                pending.add(f);
+                return f;
+            }
             if (failLoad) {
                 return CompletableFuture.failedFuture(new IllegalStateException("bd em baixo"));
             }
@@ -242,5 +254,70 @@ class PermissionServiceTest {
         repo.perms.put(id, Set.of("a.b"));
         assertEquals(Set.of("vip"), service.getGroups(id).join());
         assertEquals(Set.of("a.b"), service.getPlayerPermissions(id).join());
+    }
+
+    @Test
+    void outOfOrderRefreshes_newestWins() {
+        service.loadPlayer(id).join();
+        repo.manual = true;
+        var a = service.addGroup(id, "vip");
+        var b = service.addGroup(id, "admin");
+        repo.pending.get(1).complete(new PlayerData(Set.of("vip", "admin"), Set.of()));
+        repo.pending.get(0).complete(new PlayerData(Set.of("vip"), Set.of()));
+        assertTrue(a.join());
+        assertTrue(b.join());
+        assertTrue(service.has(id, "admin.x"));
+    }
+
+    @Test
+    void unloadDuringLoad_staysUnloaded() {
+        repo.manual = true;
+        var f = service.loadPlayer(id);
+        service.unload(id);
+        repo.pending.get(0).complete(new PlayerData(Set.of("vip"), Set.of()));
+        f.join();
+        assertFalse(service.isLoaded(id));
+    }
+
+    @Test
+    void unloadDuringRefresh_noEntry() {
+        service.loadPlayer(id).join();
+        repo.manual = true;
+        var f = service.addPlayerPermission(id, "a.b");
+        service.unload(id);
+        repo.pending.get(0).complete(new PlayerData(Set.of(), Set.of("a.b")));
+        assertTrue(f.join());
+        assertFalse(service.isLoaded(id));
+        assertFalse(service.has(id, "a.b"));
+    }
+
+    @Test
+    void refreshFailure_evictsAndStillCompletes() {
+        repo.groups.put(id, Set.of("vip"));
+        service.loadPlayer(id).join();
+        repo.manual = true;
+        var f = service.addPlayerPermission(id, "a.b");
+        repo.pending.get(0).completeExceptionally(new IllegalStateException("bd"));
+        assertTrue(f.join());
+        assertFalse(service.isLoaded(id));
+        assertFalse(service.has(id, "vip.kit"));
+    }
+
+    @Test
+    void setGroupsDuringLoad_finalEntryUsesNewGroups() throws Exception {
+        repo.manual = true;
+        var f = service.loadPlayer(id);
+        service.setGroups(groups("outra.*"));
+        repo.pending.get(0).complete(new PlayerData(Set.of("admin"), Set.of()));
+        f.join();
+        assertTrue(service.has(id, "outra.x"));
+        assertFalse(service.has(id, "admin.x"));
+    }
+
+    @Test
+    void check_nullPermission_isDenied() {
+        var r = service.check(id, null).join();
+        assertFalse(r.granted());
+        assertEquals(null, r.source());
     }
 }
