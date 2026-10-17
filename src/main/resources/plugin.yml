@@ -1,0 +1,5 @@
+name: fPermissions
+main: pt.flawless.fpermissions.FPermissions
+version: 1.0
+description: Permission groups and per-player permissions
+depend: [fAPI, fDatabase]
