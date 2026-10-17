@@ -2,6 +2,7 @@ package pt.flawless.fpermissions.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -39,7 +40,9 @@ public final class Groups {
                     throw new InvalidGroupsException("Grupo '" + name + "': permissão inválida '" + node + "'.");
                 }
             }
-            defs.put(name, new GroupDef(List.copyOf(inherits), List.copyOf(perms)));
+            if (defs.put(name, new GroupDef(List.copyOf(inherits), List.copyOf(perms))) != null) {
+                throw new InvalidGroupsException("O grupo '" + name + "' está definido mais de uma vez.");
+            }
         }
         String def = norm(defaultGroup);
         if (!defs.containsKey(def)) {
@@ -88,7 +91,7 @@ public final class Groups {
 
     /** Nomes por ordem de declaração. */
     public Set<String> names() {
-        return defs.keySet();
+        return Collections.unmodifiableSet(defs.keySet());
     }
 
     public boolean exists(String name) {

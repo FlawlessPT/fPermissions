@@ -114,6 +114,17 @@ class GroupsTest {
     }
 
     @Test
+    void recusaNomesDuplicadosAposNormalizar() {
+        assertThrows(InvalidGroupsException.class,
+                () -> Groups.parse("membro", map("MEMBRO", def(List.of()), "membro", def(List.of()))));
+    }
+
+    @Test
+    void namesImutavel() throws Exception {
+        assertThrows(UnsupportedOperationException.class, () -> basic().names().add("x"));
+    }
+
+    @Test
     void infoDevolveGrupo() throws Exception {
         var info = basic().info("VIP").orElseThrow();
         assertEquals("vip", info.name());

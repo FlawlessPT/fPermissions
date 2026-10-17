@@ -20,11 +20,22 @@ public final class GroupsLoader {
         if (groups != null) {
             for (String name : groups.getKeys(false)) {
                 ConfigurationSection g = groups.getConfigurationSection(name);
-                List<String> inherits = g == null ? List.of() : g.getStringList("inherits");
-                List<String> perms = g == null ? List.of() : g.getStringList("permissions");
+                if (g == null && groups.get(name) != null) {
+                    throw new InvalidGroupsException("O grupo '" + name + "' tem de ser uma secção.");
+                }
+                List<String> inherits = g == null ? List.of() : list(g, name, "inherits");
+                List<String> perms = g == null ? List.of() : list(g, name, "permissions");
                 defs.put(name, new GroupDef(inherits, perms));
             }
         }
         return Groups.parse(root.getString("default-group", ""), defs);
+    }
+
+    /** Ausente/nulo vale lista vazia; outro valor que não lista é erro (evita perder permissões por engano). */
+    private static List<String> list(ConfigurationSection g, String group, String key) throws InvalidGroupsException {
+        if (g.get(key) != null && !g.isList(key)) {
+            throw new InvalidGroupsException("Grupo '" + group + "': '" + key + "' tem de ser uma lista.");
+        }
+        return g.getStringList(key);
     }
 }
