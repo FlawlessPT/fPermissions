@@ -185,7 +185,14 @@ public class PermissionService implements PermissionsApi {
             }
             return read(uuid, ticket).handle((v, ex) -> {
                 if (ex != null) {
-                    unload(uuid);
+                    // so evicta se o bilhete ainda for o deste refresh; um mais novo nao e afetado
+                    tickets.computeIfPresent(uuid, (k, cur) -> {
+                        if (cur != ticket) {
+                            return cur;
+                        }
+                        cache.remove(uuid);
+                        return null;
+                    });
                     LOG.log(Level.WARNING, "Falha a recarregar as permissões de " + uuid + "; entrada retirada", ex);
                 }
                 return changed;

@@ -320,4 +320,33 @@ class PermissionServiceTest {
         assertFalse(r.granted());
         assertEquals(null, r.source());
     }
+
+    private void olderRefreshFails(boolean olderFailsFirst) {
+        service.loadPlayer(id).join();
+        repo.manual = true;
+        var a = service.addGroup(id, "vip");
+        var b = service.addGroup(id, "admin");
+        PlayerData fresh = new PlayerData(Set.of("vip", "admin"), Set.of());
+        if (olderFailsFirst) {
+            repo.pending.get(0).completeExceptionally(new IllegalStateException("bd"));
+            repo.pending.get(1).complete(fresh);
+        } else {
+            repo.pending.get(1).complete(fresh);
+            repo.pending.get(0).completeExceptionally(new IllegalStateException("bd"));
+        }
+        assertTrue(a.join());
+        assertTrue(b.join());
+        assertTrue(service.isLoaded(id));
+        assertTrue(service.has(id, "admin.x"));
+    }
+
+    @Test
+    void olderRefreshFailsFirst_newerStillStored() {
+        olderRefreshFails(true);
+    }
+
+    @Test
+    void olderRefreshFailsAfterNewerStored_keepsEntry() {
+        olderRefreshFails(false);
+    }
 }
