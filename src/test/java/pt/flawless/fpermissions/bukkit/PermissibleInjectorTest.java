@@ -1,5 +1,6 @@
 package pt.flawless.fpermissions.bukkit;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -135,5 +136,19 @@ class PermissibleInjectorTest {
         IllegalStateException e =
                 assertThrows(IllegalStateException.class, () -> injector.inject(new NoField(), UUID.randomUUID()));
         assertTrue(e.getMessage().contains("perm"));
+    }
+
+    @Test
+    void staleRestoreOfOldTargetKeepsNewInjection() {
+        FakePlayer oldSession = new FakePlayer();
+        FakePlayer newSession = new FakePlayer();
+        UUID id = UUID.randomUUID();
+        injector.inject(oldSession, id);
+        injector.inject(newSession, id); // reconnect: mesmo UUID, outro objeto
+        assertTrue(newSession.perm instanceof InjectedPermissible);
+        injector.restore(oldSession, id);
+        assertTrue(newSession.perm instanceof InjectedPermissible);
+        injector.restoreAll();
+        assertFalse(newSession.perm instanceof InjectedPermissible);
     }
 }

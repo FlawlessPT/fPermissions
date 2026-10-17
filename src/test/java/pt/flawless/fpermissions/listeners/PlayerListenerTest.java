@@ -43,6 +43,7 @@ class PlayerListenerTest {
     private Repo repo;
     private PermissionService service;
     private PlayerListener listener;
+    private List<UUID> loads;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -50,7 +51,11 @@ class PlayerListenerTest {
         m.put("membro", new GroupDef(List.of(), List.of("fshop.use")));
         repo = new Repo();
         service = new PermissionService(repo, Groups.parse("membro", m));
-        listener = new PlayerListener(service, new PermissibleInjector(service));
+        loads = new java.util.ArrayList<>();
+        listener = new PlayerListener(service, new PermissibleInjector(service), u -> {
+            loads.add(u);
+            service.loadPlayer(u);
+        }, p -> { });
     }
 
     private AsyncPlayerPreLoginEvent preLogin() {
@@ -79,5 +84,31 @@ class PlayerListenerTest {
         listener.onPreLogin(preLogin());
         listener.onLoginRejected(id);
         assertFalse(service.isLoaded(id));
+    }
+
+    @Test
+    void reconnectStaleQuitThenJoinReloads() {
+        listener.onPreLogin(preLogin()); // nova ligação carrega
+        service.unload(id); // quit síncrono da sessão antiga
+        assertFalse(service.isLoaded(id));
+        listener.ensureLoaded(id); // join da nova sessão
+        assertEquals(List.of(id), loads);
+        assertTrue(service.isLoaded(id));
+    }
+
+    @Test
+    void joinWhenLoadedDoesNotReload() {
+        listener.onPreLogin(preLogin());
+        listener.ensureLoaded(id);
+        assertTrue(loads.isEmpty());
+    }
+
+    @Test
+    void preLoginAlreadyDeniedDoesNotLoad() {
+        AsyncPlayerPreLoginEvent e = preLogin();
+        e.disallow(Result.KICK_BANNED, "banido");
+        listener.onPreLogin(e);
+        assertFalse(service.isLoaded(id));
+        assertEquals(Result.KICK_BANNED, e.getLoginResult());
     }
 }

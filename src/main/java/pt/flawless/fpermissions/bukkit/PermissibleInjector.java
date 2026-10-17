@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissibleBase;
+import org.bukkit.permissions.ServerOperator;
 import pt.flawless.fapi.enums.EMessageTypeEnum;
 import pt.flawless.fapi.logs.FConsoleLogger;
 import pt.flawless.fpermissions.service.PermissionService;
@@ -50,21 +51,29 @@ public class PermissibleInjector {
     }
 
     void inject(Object target, UUID uuid) {
-        if (held.containsKey(uuid)) {
-            return; // já injetado: manter o original verdadeiro
+        Held previous = held.get(uuid);
+        if (previous != null) {
+            if (previous.target() == target) {
+                return; // já injetado: manter o original verdadeiro
+            }
+            held.remove(uuid); // nova sessão (reconexão): o alvo antigo já não existe, não se repõe
         }
         Field field = findField(target.getClass());
         try {
             PermissibleBase original = (PermissibleBase) field.get(target);
-            field.set(target, new InjectedPermissible(original, uuid, service));
+            field.set(target, new InjectedPermissible(target instanceof ServerOperator op ? op : original, uuid, service));
             held.put(uuid, new Held(target, field, original));
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Não foi possível trocar o campo 'perm' de " + target.getClass().getName(), e);
         }
     }
 
-    void restore(Object ignored, UUID uuid) {
-        restore(uuid);
+    /** Só repõe se o alvo for o injetado: o quit de uma sessão antiga não desfaz a injeção da nova. */
+    void restore(Object target, UUID uuid) {
+        Held h = held.get(uuid);
+        if (h != null && h.target() == target) {
+            restore(uuid);
+        }
     }
 
     private void restore(UUID uuid) {

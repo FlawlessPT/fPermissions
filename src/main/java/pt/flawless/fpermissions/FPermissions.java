@@ -53,7 +53,8 @@ public class FPermissions extends JavaPlugin {
 
         injector = new PermissibleInjector(service);
         getServer().getServicesManager().register(PermissionsApi.class, service, this, ServicePriority.Normal);
-        getServer().getPluginManager().registerEvents(new PlayerListener(service, injector), this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(service, injector, this::loadOnline,
+                p -> Bukkit.getScheduler().runTask(this, () -> p.kickPlayer(PlayerListener.LOAD_FAILED))), this);
         getCommand("grupo").setExecutor(new GroupCommand(this, service, this::reloadGroups));
         getCommand("perm").setExecutor(new PermCommand(this, service));
 

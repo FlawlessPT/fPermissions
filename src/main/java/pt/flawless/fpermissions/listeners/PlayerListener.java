@@ -1,6 +1,7 @@
 package pt.flawless.fpermissions.listeners;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,16 +22,25 @@ public class PlayerListener implements Listener {
 
     private final PermissionService service;
     private final PermissibleInjector injector;
+    private final Consumer<UUID> loader;
+    private final Consumer<Player> kicker;
     private final FConsoleLogger logger = new FConsoleLogger("fPermissions");
 
-    public PlayerListener(PermissionService service, PermissibleInjector injector) {
+    /** {@code loader} carrega o jogador de forma assíncrona e injeta-o; {@code kicker} expulsa-o (já adiado para o tick seguinte). */
+    public PlayerListener(PermissionService service, PermissibleInjector injector, Consumer<UUID> loader,
+                          Consumer<Player> kicker) {
         this.service = service;
         this.injector = injector;
+        this.loader = loader;
+        this.kicker = kicker;
     }
 
     /** Corre numa thread assíncrona, por isso pode bloquear à espera da BD. Falha = fail-closed. */
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
+        if (event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+            return; // outro plugin já recusou: não carregar
+        }
         try {
             service.loadPlayer(event.getUniqueId()).join();
         } catch (Throwable t) {
@@ -58,7 +68,16 @@ public class PlayerListener implements Listener {
             injector.inject(player);
         } catch (RuntimeException e) {
             error("falha ao injetar permissões de " + player.getName() + ": " + e);
-            player.kickPlayer(LOAD_FAILED);
+            kicker.accept(player);
+            return;
+        }
+        ensureLoaded(player.getUniqueId());
+    }
+
+    /** Numa reconexão o quit da sessão antiga limpa a cache carregada no pré-login da nova: recarregar. */
+    void ensureLoaded(UUID uuid) {
+        if (!service.isLoaded(uuid)) {
+            loader.accept(uuid);
         }
     }
 
