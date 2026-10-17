@@ -1,5 +1,6 @@
 package pt.flawless.fpermissions.commands;
 
+import pt.flawless.fapi.messages.Messages;
 import java.util.Set;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -22,7 +23,7 @@ public class PermCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!Replies.isAdmin(sender)) {
-            sender.sendMessage("§cNão tens permissão.");
+            Messages.noPermission(sender);
             return true;
         }
         String sub = args.length > 0 ? args[0].toLowerCase(java.util.Locale.ROOT) : "";

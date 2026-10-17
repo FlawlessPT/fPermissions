@@ -1,5 +1,6 @@
 package pt.flawless.fpermissions.commands;
 
+import pt.flawless.fapi.messages.Messages;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.bukkit.command.Command;
@@ -31,7 +32,7 @@ public class GroupCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!Replies.isAdmin(sender)) {
-            sender.sendMessage("§cNão tens permissão.");
+            Messages.noPermission(sender);
             return true;
         }
         String sub = args.length > 0 ? args[0].toLowerCase(java.util.Locale.ROOT) : "";
