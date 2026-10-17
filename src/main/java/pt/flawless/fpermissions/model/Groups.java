@@ -28,6 +28,9 @@ public final class Groups {
         Map<String, GroupDef> defs = new LinkedHashMap<>();
         for (Map.Entry<String, GroupDef> e : raw.entrySet()) {
             String name = norm(e.getKey());
+            if (!name.matches("[a-z0-9_-]+")) {
+                throw new InvalidGroupsException("O nome do grupo '" + name + "' só pode ter letras, números, '_' e '-'.");
+            }
             if (name.length() > 64) {
                 throw new InvalidGroupsException("O nome do grupo '" + name + "' tem mais de 64 caracteres.");
             }

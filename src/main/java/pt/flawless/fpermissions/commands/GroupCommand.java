@@ -79,7 +79,7 @@ public class GroupCommand implements CommandExecutor {
         String name = args[1];
         String group = args[2];
         Replies.reply(plugin, sender, "/grupo " + sub,
-                add ? service.addGroup(Replies.uuidOf(name), group) : service.removeGroup(Replies.uuidOf(name), group),
+                add ? service.addGroup(Replies.uuidOf(sender, name), group) : service.removeGroup(Replies.uuidOf(sender, name), group),
                 changed -> sender.sendMessage(changed
                         ? "§a" + name + (add ? " foi posto no grupo " : " foi tirado do grupo ") + "§7" + group + "§a."
                         : "§e" + name + (add ? " já estava no grupo " : " não estava no grupo ") + group + "."));
@@ -95,10 +95,13 @@ public class GroupCommand implements CommandExecutor {
             return;
         }
         String name = args.length == 2 ? args[1] : sender.getName();
-        Replies.reply(plugin, sender, "/grupo list", service.getGroups(Replies.uuidOf(name)),
-                (Set<String> groups) -> sender.sendMessage(groups.isEmpty()
-                        ? "§e" + name + " não tem grupos."
-                        : "§eGrupos de " + name + ": §7" + String.join(", ", groups)));
+        Replies.reply(plugin, sender, "/grupo list", service.getGroups(Replies.uuidOf(sender, name)),
+                (Set<String> groups) -> {
+                    java.util.List<String> shown = new java.util.ArrayList<>();
+                    shown.add(service.getDefaultGroup() + " (por omissão)");
+                    shown.addAll(groups);
+                    sender.sendMessage("§eGrupos de " + name + ": §7" + String.join(", ", shown));
+                });
     }
 
     private void info(CommandSender sender, String[] args) {
@@ -120,7 +123,7 @@ public class GroupCommand implements CommandExecutor {
         }
         String name = args[1];
         String perm = args[2];
-        Replies.reply(plugin, sender, "/grupo check", service.check(Replies.uuidOf(name), perm), c -> {
+        Replies.reply(plugin, sender, "/grupo check", service.check(Replies.uuidOf(sender, name), perm), c -> {
             if (c.source() == null) {
                 sender.sendMessage("§e" + name + " §cnão tem §ea permissão §7" + perm + "§e (origem: §7nenhuma entrada§e).");
             } else if (c.granted()) {

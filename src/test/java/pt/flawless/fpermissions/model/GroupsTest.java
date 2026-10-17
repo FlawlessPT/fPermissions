@@ -141,4 +141,12 @@ class GroupsTest {
         assertTrue(ex.getMessage().contains(longo));
         assertDoesNotThrow(() -> Groups.parse("membro", map("membro", def(List.of()), "g".repeat(64), def(List.of()))));
     }
+
+    @Test
+    void groupNameWithSpaceIsRejected() {
+        Map<String, GroupDef> m = new LinkedHashMap<>();
+        m.put("Super Admin", new GroupDef(List.of(), List.of()));
+        InvalidGroupsException e = assertThrows(InvalidGroupsException.class, () -> Groups.parse("super admin", m));
+        assertTrue(e.getMessage().contains("super admin"));
+    }
 }

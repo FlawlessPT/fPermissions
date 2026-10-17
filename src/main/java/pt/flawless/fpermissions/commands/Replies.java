@@ -1,10 +1,14 @@
 package pt.flawless.fpermissions.commands;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,9 +26,35 @@ final class Replies {
         return !(sender instanceof Player) || sender.hasPermission(ADMIN);
     }
 
-    /** Servidor offline-mode: o UUID deriva do nome, serve também para nomes nunca vistos. */
-    static UUID uuidOf(String name) {
-        return Bukkit.getOfflinePlayer(name).getUniqueId();
+    /** Servidor offline-mode: o UUID deriva do nome tal como escrito, por isso acerta-se primeiro as maiúsculas. */
+    static UUID uuidOf(CommandSender sender, String typed) {
+        List<String> online = new ArrayList<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            online.add(p.getName());
+        }
+        List<String> known = new ArrayList<>();
+        for (OfflinePlayer p : Bukkit.getOfflinePlayers()) {
+            if (p.getName() != null) {
+                known.add(p.getName());
+            }
+        }
+        OfflinePlayer target = Bukkit.getOfflinePlayer(resolveName(typed, online, known));
+        if (!target.isOnline() && !target.hasPlayedBefore()) {
+            sender.sendMessage("§eAviso: '" + typed + "' nunca entrou no servidor; confirma as maiúsculas.");
+        }
+        return target.getUniqueId();
+    }
+
+    /** Nome exato: jogador online, senão jogador conhecido (sem distinguir maiúsculas), senão o escrito. */
+    static String resolveName(String typed, Collection<String> online, Collection<String> known) {
+        for (Collection<String> names : List.of(online, known)) {
+            for (String n : names) {
+                if (n.equalsIgnoreCase(typed)) {
+                    return n;
+                }
+            }
+        }
+        return typed;
     }
 
     /** Espera o futuro e responde na thread principal; erros de validação mostram a mensagem, o resto vai ao log. */

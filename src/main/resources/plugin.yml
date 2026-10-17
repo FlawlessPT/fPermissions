@@ -10,6 +10,7 @@ commands:
     aliases: [grupos]
   perm:
     description: Gere as permissões individuais dos jogadores
+    permission-message: "§cNão tens permissão."
     usage: "/perm add|remove <jogador> <permissão> | /perm list <jogador>"
     aliases: [permissao]
     permission: fpermissions.admin

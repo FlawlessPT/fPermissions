@@ -37,8 +37,8 @@ public class PermCommand implements CommandExecutor {
                     String name = args[1];
                     String perm = args[2];
                     Replies.reply(plugin, sender, "/perm " + sub,
-                            add ? service.addPlayerPermission(Replies.uuidOf(name), perm)
-                                : service.removePlayerPermission(Replies.uuidOf(name), perm),
+                            add ? service.addPlayerPermission(Replies.uuidOf(sender, name), perm)
+                                : service.removePlayerPermission(Replies.uuidOf(sender, name), perm),
                             changed -> sender.sendMessage(changed
                                     ? "§aPermissão §7" + perm + " §a" + (add ? "adicionada a " : "removida de ") + name + "."
                                     : "§e" + name + (add ? " já tinha a permissão " : " não tinha a permissão ") + perm + "."));
@@ -49,7 +49,7 @@ public class PermCommand implements CommandExecutor {
                         return true;
                     }
                     String name = args[1];
-                    Replies.reply(plugin, sender, "/perm list", service.getPlayerPermissions(Replies.uuidOf(name)),
+                    Replies.reply(plugin, sender, "/perm list", service.getPlayerPermissions(Replies.uuidOf(sender, name)),
                             (Set<String> perms) -> sender.sendMessage(perms.isEmpty()
                                     ? "§e" + name + " não tem permissões individuais."
                                     : "§ePermissões de " + name + ": §7" + String.join(", ", perms)));

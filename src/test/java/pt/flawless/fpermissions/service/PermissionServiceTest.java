@@ -349,4 +349,36 @@ class PermissionServiceTest {
     void olderRefreshFailsAfterNewerStored_keepsEntry() {
         olderRefreshFails(false);
     }
+
+    @Test
+    void unknownGroupInDbIsLoggedAndIgnored() {
+        repo.groups.put(id, Set.of("fantasma"));
+        java.util.List<String> logged = new java.util.concurrent.CopyOnWriteArrayList<>();
+        java.util.logging.Handler h = new java.util.logging.Handler() {
+            @Override
+            public void publish(java.util.logging.LogRecord r) {
+                if (r.getLevel() == java.util.logging.Level.WARNING) {
+                    logged.add(r.getMessage());
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        java.util.logging.Logger log = java.util.logging.Logger.getLogger("fPermissions");
+        log.addHandler(h);
+        try {
+            service.loadPlayer(id).join();
+        } finally {
+            log.removeHandler(h);
+        }
+        assertTrue(service.isLoaded(id));
+        assertEquals(1, logged.size());
+        assertTrue(logged.get(0).contains("fantasma"));
+    }
 }

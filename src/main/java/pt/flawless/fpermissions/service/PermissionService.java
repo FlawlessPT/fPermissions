@@ -65,6 +65,10 @@ public class PermissionService implements PermissionsApi {
     private CompletableFuture<Void> read(UUID uuid, long ticket) {
         return repository.load(uuid).thenAccept(data -> {
             Groups used = groups;
+            Set<String> unknown = used.unknown(data.groups());
+            if (!unknown.isEmpty()) {
+                LOG.warning("Grupos desconhecidos (não estão na config) ignorados para " + uuid + ": " + unknown);
+            }
             tickets.computeIfPresent(uuid, (k, current) -> {
                 if (current == ticket) {
                     cache.put(uuid, new Entry(data, compute(used, data)));
@@ -161,6 +165,10 @@ public class PermissionService implements PermissionsApi {
             requireUuid(uuid);
             return refreshed(uuid, repository.removePermission(uuid, PermissionNode.normalize(permission)));
         });
+    }
+
+    public String getDefaultGroup() {
+        return groups.defaultGroup();
     }
 
     @Override
