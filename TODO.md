@@ -13,6 +13,9 @@ Pendências conhecidas deste plugin (17/10/2026). Riscar quando feito. Detalhes 
 
 ## Código
 - [ ] `Bukkit.broadcast(msg, perm)`/`broadcastMessage` usam as subscrições do `PluginManager`, que só o `PermissibleBase` original cria: alertas de staff de plugins de terceiros não chegam a admins por grupo. Corrigir chamando `PluginManager.subscribeToPermission` para as permissões do jogador ao injetar/atualizar e `unsubscribe` ao repor. Nenhum plugin nosso usa isto hoje.
+- [ ] Se OUTRO plugin recusar o pré-login depois do nosso (prioridade HIGHEST registado depois, ou MONITOR), a entrada do jogador fica na cache até ao próximo carregamento, porque não há `PlayerLoginEvent`. Acrescentar um handler MONITOR em `AsyncPlayerPreLoginEvent` que faz `unload` quando o resultado não é `ALLOWED`.
+- [ ] `Replies.uuidOf` chama `Bukkit.getOfflinePlayers()` na thread principal (I/O, cresce com os jogadores que já entraram).
+- [ ] Numa reconexão o jogador fica sem permissões durante um instante (até a recarga assíncrona acabar).
 - [ ] `runTask` depois do plugin desativado lança `IllegalPluginAccessException` (ruído no log).
 - [ ] Se a BD estiver em baixo no arranque o plugin desativa-se e os jogadores ficam com as permissões por omissão do Bukkit (fail-open ao nível do plugin).
 
