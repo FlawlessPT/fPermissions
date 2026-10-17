@@ -13,6 +13,8 @@ import pt.flawless.fapi.enums.EMessageTypeEnum;
 import pt.flawless.fapi.logs.FConsoleLogger;
 import pt.flawless.fapi.permissions.PermissionsApi;
 import pt.flawless.fpermissions.bukkit.PermissibleInjector;
+import pt.flawless.fpermissions.commands.GroupCommand;
+import pt.flawless.fpermissions.commands.PermCommand;
 import pt.flawless.fpermissions.config.GroupsLoader;
 import pt.flawless.fpermissions.listeners.PlayerListener;
 import pt.flawless.fpermissions.model.Groups;
@@ -52,6 +54,8 @@ public class FPermissions extends JavaPlugin {
         injector = new PermissibleInjector(service);
         getServer().getServicesManager().register(PermissionsApi.class, service, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(new PlayerListener(service, injector), this);
+        getCommand("grupo").setExecutor(new GroupCommand(this, service, this::reloadGroups));
+        getCommand("perm").setExecutor(new PermCommand(this, service));
 
         for (Player online : Bukkit.getOnlinePlayers()) { // /reload com jogadores online
             loadOnline(online.getUniqueId());
