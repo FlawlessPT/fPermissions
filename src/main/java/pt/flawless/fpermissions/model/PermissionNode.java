@@ -22,7 +22,8 @@ public final class PermissionNode {
             throw new IllegalArgumentException("permissão inválida: null");
         }
         String node = raw.trim().toLowerCase(Locale.ROOT);
-        if (!VALID.matcher(node).matches()) {
+        // 128: tamanho da coluna; o INSERT IGNORE truncaria em silencio
+        if (node.length() > 128 || !VALID.matcher(node).matches()) {
             throw new IllegalArgumentException("permissão inválida: " + raw);
         }
         return node;

@@ -28,6 +28,9 @@ public final class Groups {
         Map<String, GroupDef> defs = new LinkedHashMap<>();
         for (Map.Entry<String, GroupDef> e : raw.entrySet()) {
             String name = norm(e.getKey());
+            if (name.length() > 64) {
+                throw new InvalidGroupsException("O nome do grupo '" + name + "' tem mais de 64 caracteres.");
+            }
             List<String> inherits = new ArrayList<>();
             for (String parent : e.getValue().inherits()) {
                 inherits.add(norm(parent));

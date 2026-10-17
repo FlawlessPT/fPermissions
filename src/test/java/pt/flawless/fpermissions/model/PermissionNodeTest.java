@@ -36,4 +36,10 @@ class PermissionNodeTest {
         assertTrue(PermissionNode.covers("a.b", "a.b"));
         assertFalse(PermissionNode.covers("a.b", "a.c"));
     }
+
+    @Test
+    void limiteDe128Caracteres() {
+        assertEquals("a".repeat(128), PermissionNode.normalize("a".repeat(128)));
+        assertThrows(IllegalArgumentException.class, () -> PermissionNode.normalize("a".repeat(129)));
+    }
 }

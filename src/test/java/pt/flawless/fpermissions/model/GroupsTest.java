@@ -1,5 +1,6 @@
 package pt.flawless.fpermissions.model;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -130,5 +131,14 @@ class GroupsTest {
         assertEquals("vip", info.name());
         assertEquals(List.of("membro"), info.inherits());
         assertTrue(basic().info("x").isEmpty());
+    }
+
+    @Test
+    void nomeDeGrupoComMaisDe64CaracteresRecusado() {
+        String longo = "g".repeat(65);
+        var ex = assertThrows(InvalidGroupsException.class,
+                () -> Groups.parse("membro", map("membro", def(List.of()), longo, def(List.of()))));
+        assertTrue(ex.getMessage().contains(longo));
+        assertDoesNotThrow(() -> Groups.parse("membro", map("membro", def(List.of()), "g".repeat(64), def(List.of()))));
     }
 }
