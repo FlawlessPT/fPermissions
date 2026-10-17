@@ -33,7 +33,7 @@ public class GroupCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         boolean admin = Replies.isAdmin(sender);
-        String sub = args.length > 0 ? args[0].toLowerCase() : "";
+        String sub = args.length > 0 ? args[0].toLowerCase(java.util.Locale.ROOT) : "";
         try {
             // quem não é admin só conhece "list" sem nome; o resto responde como um subcomando inexistente
             if (!admin && !(sub.equals("list") && args.length == 1)) {
@@ -121,9 +121,14 @@ public class GroupCommand implements CommandExecutor {
         String name = args[1];
         String perm = args[2];
         Replies.reply(plugin, sender, "/grupo check", service.check(Replies.uuidOf(name), perm), c -> {
-            String origin = c.source() == null ? "nenhuma entrada" : c.source();
-            sender.sendMessage("§e" + name + " " + (c.granted() ? "§atem" : "§cnão tem") + " §ea permissão §7" + perm
-                    + "§e (origem: §7" + origin + "§e).");
+            if (c.source() == null) {
+                sender.sendMessage("§e" + name + " §cnão tem §ea permissão §7" + perm + "§e (origem: §7nenhuma entrada§e).");
+            } else if (c.granted()) {
+                sender.sendMessage("§e" + name + " §atem §ea permissão §7" + perm + "§e (origem: §7" + c.source() + "§e).");
+            } else {
+                sender.sendMessage("§e" + name + " §cnão tem §ea permissão §7" + perm + "§e: está §cnegada §e(origem: §7"
+                        + c.source() + "§e).");
+            }
         });
     }
 }

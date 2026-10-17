@@ -25,7 +25,7 @@ public class PermCommand implements CommandExecutor {
             sender.sendMessage("§cNão tens permissão.");
             return true;
         }
-        String sub = args.length > 0 ? args[0].toLowerCase() : "";
+        String sub = args.length > 0 ? args[0].toLowerCase(java.util.Locale.ROOT) : "";
         try {
             switch (sub) {
                 case "add", "remove" -> {

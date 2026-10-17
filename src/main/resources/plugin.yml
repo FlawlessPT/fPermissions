@@ -1,19 +1,19 @@
 name: fPermissions
 main: pt.flawless.fpermissions.FPermissions
 version: 1.0
-description: Permission groups and per-player permissions
+description: Grupos de permissões e permissões individuais
 depend: [fAPI, fDatabase]
 commands:
   grupo:
-    description: Show your groups, or (admins) manage player groups
+    description: Mostra os teus grupos ou (admins) gere os grupos dos jogadores
     usage: "/grupo list | /grupo list [jogador] | /grupo add|remove <jogador> <grupo> | /grupo info <grupo> | /grupo groups | /grupo check <jogador> <permissão> | /grupo reload"
     aliases: [grupos]
   perm:
-    description: Manage individual player permissions
+    description: Gere as permissões individuais dos jogadores
     usage: "/perm add|remove <jogador> <permissão> | /perm list <jogador>"
     aliases: [permissao]
     permission: fpermissions.admin
 permissions:
   fpermissions.admin:
-    description: Allows /grupo (except list) and /perm
+    description: Permite usar /grupo (exceto list) e /perm
     default: op

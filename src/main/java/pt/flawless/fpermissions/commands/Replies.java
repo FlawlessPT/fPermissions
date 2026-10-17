@@ -39,7 +39,7 @@ final class Replies {
                         if (isReachable(sender)) {
                             onSuccess.accept(value);
                         }
-                    } else if (cause instanceof IllegalArgumentException) {
+                    } else if (cause instanceof IllegalArgumentException && cause.getMessage() != null) {
                         send(sender, "§c" + cause.getMessage());
                     } else {
                         FConsoleLogger.sendConsoleMessage("falha em " + what + ": " + cause, EMessageTypeEnum.ERROR);
