@@ -6,15 +6,15 @@ depend: [fAPI, fDatabase]
 commands:
   grupo:
     description: Mostra os teus grupos ou (admins) gere os grupos dos jogadores
-    usage: "/grupo list | /grupo list [jogador] | /grupo add|remove <jogador> <grupo> | /grupo info <grupo> | /grupo groups | /grupo check <jogador> <permissão> | /grupo reload"
+    usage: "/grupo | /grupo list [jogador] | /grupo add|remove <jogador> <grupo> | /grupo info <grupo> | /grupo groups | /grupo check <jogador> <permissão> | /grupo reload | /grupo help"
     aliases: [grupos]
   perm:
     description: Gere as permissões individuais dos jogadores
     permission-message: "§cNão tens permissão."
-    usage: "/perm add|remove <jogador> <permissão> | /perm list <jogador>"
+    usage: "/perm add|remove <jogador> <permissão> | /perm list <jogador> | /perm help"
     aliases: [permissao]
     permission: fpermissions.admin
 permissions:
   fpermissions.admin:
-    description: Permite usar /grupo (exceto list) e /perm
+    description: Permite usar /grupo (exceto /grupo e /grupo list sem nome) e /perm, incluindo os respetivos help
     default: op

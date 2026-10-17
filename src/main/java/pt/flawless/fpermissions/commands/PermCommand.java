@@ -54,7 +54,13 @@ public class PermCommand implements CommandExecutor {
                                     ? "§e" + name + " não tem permissões individuais."
                                     : "§ePermissões de " + name + ": §7" + String.join(", ", perms)));
                 }
-                default -> sender.sendMessage("§cUso: /perm add|remove <jogador> <permissão> | /perm list <jogador>");
+                case "help" -> {
+                    sender.sendMessage("§e/perm add <jogador> <permissão> §7- Dá uma permissão a um jogador (com - à frente, nega)");
+                    sender.sendMessage("§e/perm remove <jogador> <permissão> §7- Retira uma permissão individual de um jogador");
+                    sender.sendMessage("§e/perm list <jogador> §7- Lista as permissões individuais de um jogador");
+                    sender.sendMessage("§e/perm help §7- Mostra esta lista");
+                }
+                default -> sender.sendMessage("§cSubcomando desconhecido. Usa /perm help para ver os comandos disponíveis.");
             }
         } catch (RuntimeException e) {
             sender.sendMessage("§cNão foi possível concluir a operação.");
