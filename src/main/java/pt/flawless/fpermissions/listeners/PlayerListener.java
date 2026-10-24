@@ -71,6 +71,7 @@ public class PlayerListener implements Listener {
             kicker.accept(player);
             return;
         }
+        player.updateCommands(); // a árvore de comandos 1.13+ foi enviada antes da injeção
         ensureLoaded(player.getUniqueId());
     }
 

@@ -34,16 +34,23 @@ public class PermissionService implements PermissionsApi {
     private final AtomicLong seq = new AtomicLong();
     private final Map<UUID, Long> tickets = new ConcurrentHashMap<>();
     private volatile Groups groups;
+    private volatile java.util.function.Consumer<UUID> onRefreshed = u -> { };
 
     public PermissionService(PermissionRepository repository, Groups groups) {
         this.repository = repository;
         this.groups = groups;
     }
 
+    /** Chamado (em qualquer thread) quando as permissões de um jogador em cache mudam. */
+    public void setOnRefreshed(java.util.function.Consumer<UUID> onRefreshed) {
+        this.onRefreshed = onRefreshed;
+    }
+
     /** Troca os grupos (reload da config) e recalcula, sem BD, o conjunto de cada jogador na cache. */
     public void setGroups(Groups groups) {
         this.groups = groups;
         cache.replaceAll((uuid, e) -> new Entry(e.data(), compute(groups, e.data())));
+        cache.keySet().forEach(onRefreshed);
     }
 
     private static PermissionSet compute(Groups groups, PlayerData data) {
@@ -202,6 +209,8 @@ public class PermissionService implements PermissionsApi {
                         return null;
                     });
                     LOG.log(Level.WARNING, "Falha a recarregar as permissões de " + uuid + "; entrada retirada", ex);
+                } else {
+                    onRefreshed.accept(uuid);
                 }
                 return changed;
             });

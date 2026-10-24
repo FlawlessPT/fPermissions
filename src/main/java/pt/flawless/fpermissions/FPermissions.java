@@ -52,6 +52,7 @@ public class FPermissions extends JavaPlugin {
         }
 
         injector = new PermissibleInjector(service);
+        service.setOnRefreshed(this::updateCommands);
         getServer().getServicesManager().register(PermissionsApi.class, service, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(new PlayerListener(service, injector, this::loadOnline,
                 p -> Bukkit.getScheduler().runTask(this, () -> p.kickPlayer(PlayerListener.LOAD_FAILED))), this);
@@ -66,6 +67,16 @@ public class FPermissions extends JavaPlugin {
         consoleLogger.sendEnablePluginMessage();
     }
 
+    /** Reenvia a árvore de comandos a um jogador online; volta à thread principal (os futuros completam fora dela). */
+    private void updateCommands(UUID uuid) {
+        Bukkit.getScheduler().runTask(this, () -> {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                player.updateCommands();
+            }
+        });
+    }
+
     private void loadOnline(UUID uuid) {
         service.loadPlayer(uuid).whenComplete((v, ex) -> Bukkit.getScheduler().runTask(this, () -> {
             Player player = Bukkit.getPlayer(uuid);
@@ -78,6 +89,7 @@ public class FPermissions extends JavaPlugin {
             } else {
                 try {
                     injector.inject(player);
+                    player.updateCommands(); // o loadOnline pode terminar depois do envio da árvore
                 } catch (RuntimeException e) {
                     consoleLogger.sendMessage("falha ao injetar permissões de " + player.getName() + ": " + e, EMessageTypeEnum.ERROR);
                     player.kickPlayer(PlayerListener.LOAD_FAILED);
