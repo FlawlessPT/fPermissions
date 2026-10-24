@@ -30,3 +30,4 @@ Pendências conhecidas deste plugin (17/10/2026). Riscar quando feito. Detalhes 
 ## Operação
 - [ ] JDK 26+ (JEP 500) avisa e depois bloqueia escrever campos `final` por reflexão (`CraftHumanEntity.perm` é `protected final`).
 - [ ] Verificação no servidor real por fazer: `stop` e arranque, `/grupo add <nome> admin` na consola, `/perm` como não-admin, `/grupo reload`, `/reload` com jogadores online, sair e voltar a entrar, uma RECONEXÃO com a sessão ainda ligada, e `/tell` e `/help` como membro.
+- Migração Paper 1.21 (24/10/2026): o `PlayerListenerTest` falhou numa corrida (não foi investigado); a injeção do `PermissibleBase` por reflexão tem de ser reverificada no Paper 1.21 (campo `perm` do `CraftHumanEntity`).
