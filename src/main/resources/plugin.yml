@@ -1,5 +1,6 @@
 name: fPermissions
 main: pt.flawless.fpermissions.FPermissions
+api-version: '1.21'
 version: 1.0
 description: Grupos de permissões e permissões individuais
 depend: [fAPI, fDatabase]
