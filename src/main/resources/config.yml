@@ -3,7 +3,7 @@ default-group: membro
 
 # O OP e o "default:" dos plugin.yml já NÃO contam: só vale o que está nos grupos e nas permissões do jogador.
 # Permissões em uso nos plugins (o "admin" tem-nas todas por "*"):
-#   fshop.admin, feconomy.admin, fservercore.setspawn, barberians.staff (staff do fUtilities)
+#   fshop.admin, feconomy.admin, fservercore.setspawn, fservercore.vip, fservercore.spawnvip, barberians.staff (staff do fUtilities)
 #   comandos.use (menu /comandos do fUtilities; dar a quem o deve ver)
 # "*" dá tudo; "a.b.*" dá a subárvore; "-nó" nega (a negação ganha sempre).
 groups:
@@ -15,7 +15,10 @@ groups:
       - bukkit.broadcast.user    # receber broadcasts públicos
   vip:
     inherits: [membro]
+    permissions:
+      - fservercore.vip          # entra e renasce no spawn VIP (fServerCore)
   admin:
     inherits: [vip]
     permissions:
       - "*"
+      - -fservercore.vip         # staff usa o spawn normal
