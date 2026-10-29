@@ -1,9 +1,13 @@
 package pt.flawless.fpermissions.commands;
 
 import pt.flawless.fapi.messages.Messages;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.bukkit.command.Command;
+import org.bukkit.configuration.ConfigurationSection;
+import pt.flawless.fpermissions.model.PermissionNode;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -13,7 +17,7 @@ import pt.flawless.fapi.logs.FConsoleLogger;
 import pt.flawless.fpermissions.service.PermissionService;
 
 /**
- * /grupo: add, remove, list, info, groups, check, reload, help. Só para quem tem {@code fpermissions.admin} (declarado
+ * /grupo: add, remove, list, addperm, removeperm, info, groups, check, reload, help. Só para quem tem {@code fpermissions.admin} (declarado
  * no plugin.yml e verificado aqui); a consola conta como admin.
  */
 public class GroupCommand implements CommandExecutor {
@@ -53,6 +57,7 @@ public class GroupCommand implements CommandExecutor {
             switch (sub) {
                 case "add", "remove" -> addRemove(sender, sub, args);
                 case "list" -> list(sender, args);
+                case "addperm", "removeperm" -> groupPerm(sender, sub, args);
                 case "info" -> info(sender, args);
                 case "groups" -> {
                     if (args.length != 1) {
@@ -87,6 +92,8 @@ public class GroupCommand implements CommandExecutor {
         sender.sendMessage("§e/grupo add <jogador> <grupo> §7- Põe um jogador num grupo");
         sender.sendMessage("§e/grupo remove <jogador> <grupo> §7- Tira um jogador de um grupo");
         sender.sendMessage("§e/grupo info <grupo> §7- Mostra a herança e as permissões de um grupo");
+        sender.sendMessage("§e/grupo addperm <grupo> <permissão> §7- Dá uma permissão a um grupo (- à frente nega)");
+        sender.sendMessage("§e/grupo removeperm <grupo> <permissão> §7- Tira uma permissão a um grupo");
         sender.sendMessage("§e/grupo groups §7- Lista os grupos configurados");
         sender.sendMessage("§e/grupo check <jogador> <permissão> §7- Diz se um jogador tem uma permissão e de onde vem");
         sender.sendMessage("§e/grupo reload §7- Recarrega os grupos do config.yml");
@@ -106,6 +113,43 @@ public class GroupCommand implements CommandExecutor {
                 changed -> sender.sendMessage(changed
                         ? "§a" + name + (add ? " foi posto no grupo " : " foi tirado do grupo ") + "§7" + group + "§a."
                         : "§e" + name + (add ? " já estava no grupo " : " não estava no grupo ") + group + "."));
+    }
+
+    /** Edita {@code groups.<grupo>.permissions} no config.yml, grava e recarrega. */
+    private void groupPerm(CommandSender sender, String sub, String[] args) {
+        if (args.length != 3) {
+            sender.sendMessage("§cUso: /grupo " + sub + " <grupo> <permissão>");
+            return;
+        }
+        boolean add = sub.equals("addperm");
+        String perm;
+        try {
+            perm = PermissionNode.normalize(args[2]);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage("§cPermissão inválida: " + args[2]);
+            return;
+        }
+        ConfigurationSection groups = plugin.getConfig().getConfigurationSection("groups");
+        String key = groups == null ? null : groups.getKeys(false).stream()
+                .filter(k -> k.equalsIgnoreCase(args[1])).findFirst().orElse(null);
+        if (key == null) {
+            sender.sendMessage("§cO grupo " + args[1] + " não existe.");
+            return;
+        }
+        List<String> perms = new ArrayList<>(groups.getStringList(key + ".permissions"));
+        if (add ? perms.contains(perm) : !perms.remove(perm)) {
+            sender.sendMessage("§e" + key + (add ? " já tem a permissão " : " não tem a permissão ") + perm + ".");
+            return;
+        }
+        if (add) {
+            perms.add(perm);
+        }
+        groups.set(key + ".permissions", perms);
+        plugin.saveConfig();
+        String error = reloader.get();
+        sender.sendMessage(error == null
+                ? "§aPermissão §7" + perm + (add ? " §aadicionada ao grupo " : " §aremovida do grupo ") + "§7" + key + "§a."
+                : "§cGravado, mas não foi possível recarregar: " + error);
     }
 
     private void list(CommandSender sender, String[] args) {

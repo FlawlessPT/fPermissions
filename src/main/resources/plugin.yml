@@ -6,9 +6,9 @@ description: Grupos de permissões e permissões individuais
 depend: [fAPI, fDatabase]
 commands:
   grupo:
-    description: Mostra os teus grupos e gere os grupos dos jogadores (só admins)
+    description: Mostra os teus grupos e gere os grupos dos jogadores e as permissões dos grupos (só admins)
     permission-message: "§cNão tens permissão."
-    usage: "/grupo | /grupo list [jogador] | /grupo add|remove <jogador> <grupo> | /grupo info <grupo> | /grupo groups | /grupo check <jogador> <permissão> | /grupo reload | /grupo help"
+    usage: "/grupo | /grupo list [jogador] | /grupo add|remove <jogador> <grupo> | /grupo info <grupo> | /grupo addperm|removeperm <grupo> <permissão> | /grupo groups | /grupo check <jogador> <permissão> | /grupo reload | /grupo help"
     aliases: [grupos]
     permission: fpermissions.admin
   perm:
