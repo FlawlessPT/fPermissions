@@ -16,6 +16,7 @@ import pt.flawless.fpermissions.bukkit.PermissibleInjector;
 import pt.flawless.fpermissions.commands.GroupCommand;
 import pt.flawless.fpermissions.commands.PermCommand;
 import pt.flawless.fpermissions.config.GroupsLoader;
+import pt.flawless.fpermissions.listeners.OpListener;
 import pt.flawless.fpermissions.listeners.PlayerListener;
 import pt.flawless.fpermissions.model.Groups;
 import pt.flawless.fpermissions.model.InvalidGroupsException;
@@ -56,6 +57,8 @@ public class FPermissions extends JavaPlugin {
         getServer().getServicesManager().register(PermissionsApi.class, service, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(new PlayerListener(service, injector, this::loadOnline,
                 p -> Bukkit.getScheduler().runTask(this, () -> p.kickPlayer(PlayerListener.LOAD_FAILED))), this);
+        getServer().getPluginManager().registerEvents(new OpListener(), this);
+        OpListener.deopAll();
         getCommand("grupo").setExecutor(new GroupCommand(this, service, this::reloadGroups));
         getCommand("perm").setExecutor(new PermCommand(this, service));
 
